@@ -1,8 +1,8 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
@@ -117,14 +117,16 @@ public class p3 {
 
     /* Solution for step 2 */
     public static void showHPInfo(int id) throws SQLException {
-        Statement stmt = dbConnection.createStatement();
+        PreparedStatement stmt;
         ResultSet rSet;
         boolean hasNext;
 
         String providerQuery = "SELECT * " +
             "FROM Provider " +
-            "WHERE ProviderID = " + id;
-        rSet = stmt.executeQuery(providerQuery);
+            "WHERE ProviderID = ?";
+        stmt = dbConnection.prepareStatement(providerQuery);
+        stmt.setInt(1, id);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
 
         if (!hasNext) {
@@ -139,8 +141,10 @@ public class p3 {
 
         String titleQuery = "SELECT * " +
             "FROM ProviderTitle " +
-            "WHERE ProviderID = " + id;
-        rSet = stmt.executeQuery(titleQuery);
+            "WHERE ProviderID = ?";
+        stmt = dbConnection.prepareStatement(titleQuery);
+        stmt.setInt(1, id);
+        rSet = stmt.executeQuery();
 
         System.out.print("Title: ");
         hasNext = rSet.next();
@@ -156,8 +160,10 @@ public class p3 {
 
         String locQuery = "SELECT * " +
             "FROM (Office NATURAL JOIN Location)" +
-            "WHERE ProviderID = " + id;
-        rSet = stmt.executeQuery(locQuery);
+            "WHERE ProviderID = ?";
+        stmt = dbConnection.prepareStatement(locQuery);
+        stmt.setInt(1, id);
+        rSet = stmt.executeQuery();
 
         System.out.print("Office Location: ");
         hasNext = rSet.next();
@@ -174,14 +180,16 @@ public class p3 {
 
     /* Solution for step 3 */
     public static void showHSInfo(String name) throws SQLException {
-        Statement stmt = dbConnection.createStatement();
+        PreparedStatement stmt;
         ResultSet rSet;
         boolean hasNext;
 
         String serviceQuery = "SELECT * " +
             "FROM Services " +
-            "WHERE ServiceName = '" + name + "'";
-        rSet = stmt.executeQuery(serviceQuery);
+            "WHERE ServiceName = ?";
+        stmt = dbConnection.prepareStatement(serviceQuery);
+        stmt.setString(1, name);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
 
         if (!hasNext) {
@@ -194,8 +202,10 @@ public class p3 {
 
         String locQuery = "SELECT * " +
             "FROM (ResidesIn NATURAL JOIN Location)" +
-            "WHERE ServiceName = '" + name + "'";
-        rSet = stmt.executeQuery(locQuery);
+            "WHERE ServiceName = ?";
+        stmt = dbConnection.prepareStatement(locQuery);
+        stmt.setString(1, name);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
 
         if (!hasNext) {
@@ -209,16 +219,18 @@ public class p3 {
     /* Solution for step 4 */
     public static void showPathInfo(String startName, String endName)
         throws SQLException {
-        Statement stmt = dbConnection.createStatement();
+        PreparedStatement stmt;
         ResultSet rSet;
         boolean hasNext;
 
         String startID, endID;
 
-        String startQuery = "SELECT * " +
+        String locQuery = "SELECT * " +
             "FROM Location " +
-            "WHERE LocationName = '" + startName + "'";
-        rSet = stmt.executeQuery(startQuery);
+            "WHERE LocationName = ?";
+        stmt = dbConnection.prepareStatement(locQuery);
+        stmt.setString(1, startName);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
         if (!hasNext) {
             System.out.println("Couldn't find start location.");
@@ -226,10 +238,8 @@ public class p3 {
         }
         startID = rSet.getNString("LocationID");
 
-        String endQuery = "SELECT * " +
-            "FROM Location " +
-            "WHERE LocationName = '" + endName + "'";
-        rSet = stmt.executeQuery(endQuery);
+        stmt.setString(1, endName);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
         if (!hasNext) {
             System.out.println("Couldn't find end location.");
@@ -240,10 +250,13 @@ public class p3 {
         int minPathLen, minPathID;
         String lenQuery = "SELECT PathID, COUNT(LocationID) " +
             "FROM (Path NATURAL JOIN PathContains) " +
-            "WHERE PathStart = '" + startName + "' " +
-            "AND PathEnd = '" + endName + "'" +
+            "WHERE PathStart = ?" +
+            "AND PathEnd = ?" +
             "GROUP BY PathID";
-        rSet = stmt.executeQuery(lenQuery);
+        stmt = dbConnection.prepareStatement(lenQuery);
+        stmt.setString(1, startName);
+        stmt.setString(2, endName);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
         if (!hasNext) {
             System.out.println("No paths found.");
@@ -264,6 +277,7 @@ public class p3 {
 
         System.out.println("Path ID for shortest path: " + minPathID);
 
+        // Represents the data that we need to pull from PathContents
         class PathLoc implements Comparable<PathLoc> {
             int order;
             String name;
@@ -277,11 +291,15 @@ public class p3 {
                 return new Integer(order).compareTo(p2.order);
             }
         };
+        // Will hold all our locations in the path
         ArrayList<PathLoc> contents = new ArrayList<PathLoc>();
+
         String ctsQuery = "SELECT LocationName, PathOrder, FloorID " +
             "FROM (PathContains NATURAL JOIN Location) " +
-            "WHERE PathID = " + minPathID;
-        rSet = stmt.executeQuery(ctsQuery);
+            "WHERE PathID = ?";
+        stmt = dbConnection.prepareStatement(ctsQuery);
+        stmt.setInt(1, minPathID);
+        rSet = stmt.executeQuery();
         hasNext = rSet.next();
         while (hasNext) {
             contents.add(new PathLoc(
