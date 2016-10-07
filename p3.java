@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 
 public class p3 {
@@ -97,6 +98,17 @@ public class p3 {
             }
             break;
         case 3:
+            System.out.print("Start Location: ");
+            String start = sc.nextLine();
+            System.out.print("End Location: ");
+            String end = sc.nextLine();
+            try {
+                showPathInfo(start, end);
+            } catch (SQLException e) {
+                System.out.println("Error fetching path information.");
+                e.printStackTrace();
+                return;
+            }
             break;
         case 4:
             break;
@@ -187,10 +199,104 @@ public class p3 {
         hasNext = rSet.next();
 
         if (!hasNext) {
-            System.out.println("Service location.");
+            System.out.println("Couldn't find service location.");
             return;
         }
         System.out.println("Location: " + rSet.getNString("LocationName"));
         System.out.println("Floor: " + rSet.getNString("FloorID"));
+    }
+
+    /* Solution for step 4 */
+    public static void showPathInfo(String startName, String endName)
+        throws SQLException {
+        Statement stmt = dbConnection.createStatement();
+        ResultSet rSet;
+        boolean hasNext;
+
+        String startID, endID;
+
+        String startQuery = "SELECT * " +
+            "FROM Location " +
+            "WHERE LocationName = '" + startName + "'";
+        rSet = stmt.executeQuery(startQuery);
+        hasNext = rSet.next();
+        if (!hasNext) {
+            System.out.println("Couldn't find start location.");
+            return;
+        }
+        startID = rSet.getNString("LocationID");
+
+        String endQuery = "SELECT * " +
+            "FROM Location " +
+            "WHERE LocationName = '" + endName + "'";
+        rSet = stmt.executeQuery(endQuery);
+        hasNext = rSet.next();
+        if (!hasNext) {
+            System.out.println("Couldn't find end location.");
+            return;
+        }
+        endID = rSet.getNString("LocationID");
+
+        int minPathLen, minPathID;
+        String lenQuery = "SELECT PathID, COUNT(LocationID) " +
+            "FROM (Path NATURAL JOIN PathContains) " +
+            "WHERE PathStart = '" + startName + "' " +
+            "AND PathEnd = '" + endName + "'" +
+            "GROUP BY PathID";
+        rSet = stmt.executeQuery(lenQuery);
+        hasNext = rSet.next();
+        if (!hasNext) {
+            System.out.println("No paths found.");
+            return;
+        }
+        minPathLen = rSet.getInt(2);
+        minPathID = rSet.getInt("PathID");
+        hasNext = rSet.next();
+        while(hasNext) {
+            int l = rSet.getInt(2);
+            int i = rSet.getInt("PathID");
+            if (l < minPathLen) {
+                minPathLen = l;
+                minPathID = i;
+            }
+            hasNext = rSet.next();
+        }
+
+        System.out.println("Path ID for shortest path: " + minPathID);
+
+        class PathLoc implements Comparable<PathLoc> {
+            int order;
+            String name;
+            String floor;
+            public PathLoc(int o,String n,String f) {
+                order = o;
+                name = n;
+                floor = f;
+            }
+            public int compareTo(PathLoc p2) {
+                return new Integer(order).compareTo(p2.order);
+            }
+        };
+        ArrayList<PathLoc> contents = new ArrayList<PathLoc>();
+        String ctsQuery = "SELECT LocationName, PathOrder, FloorID " +
+            "FROM (PathContains NATURAL JOIN Location) " +
+            "WHERE PathID = " + minPathID;
+        rSet = stmt.executeQuery(ctsQuery);
+        hasNext = rSet.next();
+        while (hasNext) {
+            contents.add(new PathLoc(
+                             rSet.getInt("PathOrder"),
+                             rSet.getNString("LocationName"),
+                             rSet.getNString("FloorID")));
+            hasNext = rSet.next();
+        }
+        Collections.sort(contents);
+
+        for(int i = 0; i < contents.size();++i) {
+            System.out.printf("\t%-4d %-20s %-8s\n",
+                              contents.get(i).order,
+                              contents.get(i).name,
+                              contents.get(i).floor);
+        }
     }
 }
