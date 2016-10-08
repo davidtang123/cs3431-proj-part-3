@@ -334,7 +334,6 @@ public class p3 {
 	
 	/*Solution for Step 5*/
 	public static void updateHSInfo(String hsname, String lid) throws SQLException {
-        Statement stmt = dbConnection.createStatement();
         PreparedStatement stmt;
 		int count;
 
@@ -342,7 +341,7 @@ public class p3 {
             "SET LocationID = '?' WHERE ServiceName = '?'";
 		stmt = dbConnection.prepareStatement(updatestring);
 		stmt.setString(1, lid);
-		stmt.setSTring(2, hsname);
+		stmt.setString(2, hsname);
         count = stmt.executeUpdate(updatestring);
         
         if (count == 0) {
