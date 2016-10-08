@@ -114,17 +114,17 @@ public class p3 {
             }
             break;
         case 4:
-			System.out.print("Enter Health Service Name:");
-			String sname = sc.nextLine();
-			System.out.print("Enter the new LocationID:");
-			String lid = sc.nextLine();
-			try {
-				updateHSInfo(sname, lid);
-			} catch (SQLException e){
-				System.out.println("Error updating health service information.");
-				e.printStackTrace();
-				return;
-			}
+            System.out.print("Enter Health Service Name:");
+            String sname = sc.nextLine();
+            System.out.print("Enter the new LocationID:");
+            String lid = sc.nextLine();
+            try {
+                updateHSInfo(sname, lid);
+            } catch (SQLException e){
+                System.out.println("Error updating health service information.");
+                e.printStackTrace();
+                return;
+            }
             break;
         }
     }
@@ -331,17 +331,17 @@ public class p3 {
                               contents.get(i).floor);
         }
     }
-	
-	/*Solution for Step 5*/
-	public static void updateHSInfo(String hsname, String lid) throws SQLException {
+    
+    /*Solution for Step 5*/
+    public static void updateHSInfo(String hsname, String lid) throws SQLException {
         PreparedStatement stmt;
-		int count;
+        int count;
 
         String updatestring = "UPDATE ResidesIn " +
             "SET LocationID = '?' WHERE ServiceName = '?'";
-		stmt = dbConnection.prepareStatement(updatestring);
-		stmt.setString(1, lid);
-		stmt.setString(2, hsname);
+        stmt = dbConnection.prepareStatement(updatestring);
+        stmt.setString(1, lid);
+        stmt.setString(2, hsname);
         count = stmt.executeUpdate(updatestring);
         
         if (count == 0) {
